@@ -1,4 +1,5 @@
-require('dotenv').config();
+require('dotenv').config();,
+require('./keeprunning.js');
 const { Client, GatewayIntentBits } = require('discord.js');
 const fetch = require('node-fetch');
 
