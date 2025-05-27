@@ -1,10 +1,10 @@
 require('dotenv').config();
-require('./keeprunning.js');
+require('./keeprunning'); // Spustí mini web server
 const puppeteer = require('puppeteer-core');
 const { Client, GatewayIntentBits } = require('discord.js');
 const fs = require('fs');
 const cheerio = require('cheerio');
-const fetch = require('node-fetch'); // Používáme node-fetch místo undici
+const fetch = require('node-fetch'); // pokud nemáš, nainstaluj npm i node-fetch@2
 
 const client = new Client({
   intents: [
@@ -15,7 +15,7 @@ const client = new Client({
 });
 
 const CHANNEL_URL = 'https://kick.com/bigwsonny';
-const DISCORD_CHANNEL_ID = 'TVŮJ_DISCORD_KANÁL_ID'; // Nahraď správným ID kanálu
+const DISCORD_CHANNEL_ID = 'TVŮJ_DISCORD_KANÁL_ID'; // nahraď správným ID kanálu
 
 let usersWhoTypedOne = new Set();
 let notifiedToday = false;
@@ -51,7 +51,7 @@ async function startKickChatListener() {
   }
 
   browser = await puppeteer.launch({
-    executablePath: '/usr/bin/google-chrome',
+    executablePath: '/usr/bin/google-chrome', // Explicitně zvoleno, můžeš změnit na jinou cestu
     args: ['--no-sandbox', '--disable-setuid-sandbox'],
     headless: true,
   });
@@ -60,7 +60,7 @@ async function startKickChatListener() {
 
   await page.goto(CHANNEL_URL);
 
-  await page.waitForSelector('.chat-message'); // Upravit podle skutečné třídy na Kick.com
+  await page.waitForSelector('.chat-message'); // uprav podle skutečné třídy na Kick.com
 
   await page.exposeFunction('onNewChatMessage', (username, message) => {
     if (message.trim() === '1') {
@@ -70,7 +70,7 @@ async function startKickChatListener() {
   });
 
   await page.evaluate(() => {
-    const chatContainer = document.querySelector('.chat-messages-container'); // Upravit podle skutečného selektoru
+    const chatContainer = document.querySelector('.chat-messages-container'); // uprav podle skutečného selektoru
     if (!chatContainer) {
       console.error('Chat container nenalezen');
       return;
@@ -80,8 +80,8 @@ async function startKickChatListener() {
       for (const mutation of mutations) {
         for (const node of mutation.addedNodes) {
           if (node.nodeType === Node.ELEMENT_NODE) {
-            const usernameElem = node.querySelector('.username'); // Upravit dle struktury
-            const messageElem = node.querySelector('.message-text'); // Upravit dle struktury
+            const usernameElem = node.querySelector('.username'); // uprav dle struktury
+            const messageElem = node.querySelector('.message-text'); // uprav dle struktury
 
             if (usernameElem && messageElem) {
               const username = usernameElem.innerText;
