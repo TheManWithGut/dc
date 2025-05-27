@@ -1,5 +1,6 @@
-require('dotenv').config();,
-require('./keeprunning.js');
+require('dotenv').config();
+require('./keeprunning.js'); // Mini server
+
 const { Client, GatewayIntentBits } = require('discord.js');
 const fetch = require('node-fetch');
 
@@ -16,12 +17,10 @@ const DISCORD_CHANNEL_ID = process.env.DISCORD_CHANNEL_ID;
 
 let notifiedToday = false;
 
-// Kontrola, zda je stream live
 async function checkIfStreamIsLive() {
   try {
     const res = await fetch(CHANNEL_URL);
     const html = await res.text();
-
     const match = html.match(/<script id="__NEXT_DATA__" type="application\/json">(.+?)<\/script>/);
     if (!match || !match[1]) throw new Error("Stream data nenalezena");
 
@@ -34,7 +33,6 @@ async function checkIfStreamIsLive() {
   }
 }
 
-// Odeslání zprávy na Discord
 async function sendDiscordNotification(message) {
   try {
     const channel = await client.channels.fetch(DISCORD_CHANNEL_ID);
@@ -49,7 +47,6 @@ async function sendDiscordNotification(message) {
   }
 }
 
-// Kontrola a notifikace
 async function monitorStream() {
   const isLive = await checkIfStreamIsLive();
   if (isLive && !notifiedToday) {
@@ -58,7 +55,6 @@ async function monitorStream() {
   }
 }
 
-// Reset každý den o půlnoci
 function scheduleMidnightReset() {
   const now = new Date();
   const nextMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
@@ -75,7 +71,7 @@ scheduleMidnightReset();
 
 client.once('ready', () => {
   console.log(`✅ Bot je online jako ${client.user.tag}`);
-  setInterval(monitorStream, 5 * 60 * 1000); // každých 5 minut
+  setInterval(monitorStream, 5 * 60 * 1000);
 });
 
 client.login(process.env.DISCORD_TOKEN);
