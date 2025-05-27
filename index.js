@@ -1,4 +1,5 @@
 require('dotenv').config();
+require('./keeprunning.js');
 const puppeteer = require('puppeteer-core');
 const { Client, GatewayIntentBits } = require('discord.js');
 const fs = require('fs');
