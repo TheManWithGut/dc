@@ -12,8 +12,8 @@ const client = new Client({
   ]
 });
 
-const CHANNEL_URL = 'https://kick.com/bigwsonny';
-const DISCORD_CHANNEL_ID = process.env.DISCORD_CHANNEL_ID;
+const CHANNEL_URL = 'https://kick.com/endermanch1;
+const DISCORD_CHANNEL_ID = '1376926766408405113';
 
 let notifiedToday = false;
 
