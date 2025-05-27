@@ -1,10 +1,7 @@
-// Načte proměnné z .env souboru
 require('dotenv').config();
-
-// Načte potřebné moduly z discord.js
 const { Client, GatewayIntentBits } = require('discord.js');
 
-// Vytvoření instance bota s potřebnými právy (intenty)
+// Vytvoření bota s potřebnými "intenty" – co bot sleduje
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -13,21 +10,23 @@ const client = new Client({
   ]
 });
 
-// Událost: bot je přihlášen a připraven
+// Přihlášení do Discordu pomocí tokenu z proměnné prostředí
+client.login(process.env.DISCORD_TOKEN);
+
+// Když je bot připraven
 client.once('ready', () => {
-  console.log(`✅ Bot je přihlášen jako ${client.user.tag}`);
+  console.log(`✅ Bot je online jako ${client.user.tag}`);
 });
 
-// Událost: někdo pošle zprávu
-client.on('messageCreate', (message) => {
-  // Ignoruj zprávy od botů
-  if (message.author.bot) return;
-
-  // Reakce na příkaz !ping
+// Odpověď na zprávy
+client.on('messageCreate', message => {
+  if (message.author.bot) return; // Ignoruj bota
   if (message.content === '!ping') {
     message.channel.send('🏓 Pong!');
   }
 });
 
-// Přihlášení bota pomocí tokenu z .env
-client.login(process.env.DISCORD_TOKEN);
+// Ošetření případných chyb (doporučeno na Renderu)
+process.on('unhandledRejection', error => {
+  console.error('❌ Unhandled promise rejection:', error);
+});
