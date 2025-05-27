@@ -4,7 +4,7 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "install": "npm config set registry https://registry.npmjs.org/ && npm install"
+    "install": "npm install"
   },
   "dependencies": {
     "discord.js": "^14.11.0",
