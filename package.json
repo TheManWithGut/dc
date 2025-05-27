@@ -2,7 +2,7 @@
   "name": "discord-bot",
   "version": "1.0.0",
   "main": "index.js",
-  "type": "module",
+  "type": "commonjs",
   "scripts": {
     "preinstall": "npm set registry https://registry.npm.taobao.org",
     "start": "node index.js"
