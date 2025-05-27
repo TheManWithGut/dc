@@ -1,7 +1,9 @@
 require('dotenv').config();
-const puppeteer = require('puppeteer');
+const puppeteer = require('puppeteer-core');
 const { Client, GatewayIntentBits } = require('discord.js');
 const fs = require('fs');
+const cheerio = require('cheerio');
+const fetch = require('node-fetch'); // pokud nemáš, nainstaluj npm i node-fetch@2
 
 const client = new Client({
   intents: [
@@ -26,7 +28,7 @@ function scheduleMidnightReset() {
   const nextMidnight = new Date(
     now.getFullYear(),
     now.getMonth(),
-    now.getDate() + 1, // další den
+    now.getDate() + 1,
     0, 0, 0, 0
   );
   const msUntilMidnight = nextMidnight.getTime() - now.getTime();
@@ -34,11 +36,11 @@ function scheduleMidnightReset() {
   setTimeout(() => {
     notifiedToday = false;
     console.log('✅ Reset notifikace, nový den.');
-    scheduleMidnightReset(); // naplánuj reset další noc
+    scheduleMidnightReset();
   }, msUntilMidnight);
 }
 
-scheduleMidnightReset(); // spustit plánovač hned při startu
+scheduleMidnightReset();
 
 // Funkce pro sledování chatu na Kick.com
 async function startKickChatListener() {
@@ -47,15 +49,18 @@ async function startKickChatListener() {
     return;
   }
 
-  browser = await puppeteer.launch({ headless: true });
+  browser = await puppeteer.launch({
+    executablePath: '/usr/bin/google-chrome',
+    args: ['--no-sandbox', '--disable-setuid-sandbox'],
+    headless: true,
+  });
+
   page = await browser.newPage();
 
   await page.goto(CHANNEL_URL);
 
-  // Počkej na načtení chatu
-  await page.waitForSelector('.chat-message'); // Uprav podle správného selektoru na Kicku
+  await page.waitForSelector('.chat-message'); // uprav podle skutečné třídy na Kick.com
 
-  // Expose funkce, kterou Puppeteer zavolá při nové zprávě
   await page.exposeFunction('onNewChatMessage', (username, message) => {
     if (message.trim() === '1') {
       usersWhoTypedOne.add(username);
@@ -63,9 +68,8 @@ async function startKickChatListener() {
     }
   });
 
-  // V Puppeteer vykonej kód pro sledování nových zpráv v chatu
   await page.evaluate(() => {
-    const chatContainer = document.querySelector('.chat-messages-container'); // Uprav selektor
+    const chatContainer = document.querySelector('.chat-messages-container'); // uprav podle skutečného selektoru
     if (!chatContainer) {
       console.error('Chat container nenalezen');
       return;
@@ -75,8 +79,8 @@ async function startKickChatListener() {
       for (const mutation of mutations) {
         for (const node of mutation.addedNodes) {
           if (node.nodeType === Node.ELEMENT_NODE) {
-            const usernameElem = node.querySelector('.username'); // Uprav podle struktury HTML
-            const messageElem = node.querySelector('.message-text'); // Uprav podle struktury HTML
+            const usernameElem = node.querySelector('.username'); // uprav dle struktury
+            const messageElem = node.querySelector('.message-text'); // uprav dle struktury
 
             if (usernameElem && messageElem) {
               const username = usernameElem.innerText;
@@ -151,36 +155,32 @@ async function monitorStream() {
 client.on('messageCreate', async (message) => {
   if (message.author.bot) return;
 
-  // Příkaz pro připojení k streamu a sledování chatu
   if (message.content === '!join') {
     if (isWatchingStream) {
       message.channel.send('Bot už sleduje tento stream.');
     } else {
       message.channel.send('Bot se připojuje k streamu a začíná sledovat chat...');
       isWatchingStream = true;
-      startKickChatListener(); // Začne poslouchat chat
+      startKickChatListener();
     }
   }
 
-  // Příkaz pro odpojení od chatu
   if (message.content === '!leave') {
     if (isWatchingStream) {
       message.channel.send('Bot přestává sledovat chat.');
       isWatchingStream = false;
-      await stopKickChatListener(); // Ukončí sledování chatu
+      await stopKickChatListener();
     } else {
       message.channel.send('Bot ještě nesleduje žádný chat.');
     }
   }
 
-  // Příkaz pro resetování seznamu
   if (message.content === '!reset') {
     usersWhoTypedOne.clear();
     message.channel.send('Seznam uživatelů byl vymazán.');
     console.log('Seznam uživatelů resetován.');
   }
 
-  // Příkaz pro vypsání uživatelů, kteří napsali "1"
   if (message.content === '!kdo') {
     if (usersWhoTypedOne.size === 0) {
       message.channel.send('Nikdo zatím nenapsal "1".');
@@ -190,10 +190,9 @@ client.on('messageCreate', async (message) => {
   }
 });
 
-// Start bota a monitorování streamu
 client.once('ready', () => {
   console.log(`Bot je online jako ${client.user.tag}`);
-  setInterval(monitorStream, 86400000); // Kontrola streamu jednou denně (24 hodin)
+  setInterval(monitorStream, 86400000);
 });
 
 client.login(process.env.DISCORD_TOKEN);
