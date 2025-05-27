@@ -1,10 +1,11 @@
 require('dotenv').config();
-require('./keeprunning'); // Spustí mini web server
-const puppeteer = require('puppeteer-core');
+require('./keeprunning'); // Mini Express keep-alive server
+
+const puppeteer = require('puppeteer'); // Změna na puppeteer místo puppeteer-core
 const { Client, GatewayIntentBits } = require('discord.js');
-const fs = require('fs');
 const cheerio = require('cheerio');
-const fetch = require('node-fetch'); // pokud nemáš, nainstaluj npm i node-fetch@2
+const fetch = require('node-fetch');
+const fs = require('fs');
 
 const client = new Client({
   intents: [
@@ -15,7 +16,7 @@ const client = new Client({
 });
 
 const CHANNEL_URL = 'https://kick.com/bigwsonny';
-const DISCORD_CHANNEL_ID = 'TVŮJ_DISCORD_KANÁL_ID'; // nahraď správným ID kanálu
+const DISCORD_CHANNEL_ID = process.env.DISCORD_CHANNEL_ID;
 
 let usersWhoTypedOne = new Set();
 let notifiedToday = false;
@@ -23,16 +24,11 @@ let isWatchingStream = false;
 let browser = null;
 let page = null;
 
-// Pomocná funkce pro reset notifikace o půlnoci
+// Reset notifikace o půlnoci
 function scheduleMidnightReset() {
   const now = new Date();
-  const nextMidnight = new Date(
-    now.getFullYear(),
-    now.getMonth(),
-    now.getDate() + 1,
-    0, 0, 0, 0
-  );
-  const msUntilMidnight = nextMidnight.getTime() - now.getTime();
+  const nextMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+  const msUntilMidnight = nextMidnight - now;
 
   setTimeout(() => {
     notifiedToday = false;
@@ -40,160 +36,127 @@ function scheduleMidnightReset() {
     scheduleMidnightReset();
   }, msUntilMidnight);
 }
-
 scheduleMidnightReset();
 
-// Funkce pro sledování chatu na Kick.com
 async function startKickChatListener() {
-  if (browser) {
-    console.log('Bot už sleduje stream.');
-    return;
-  }
+  if (browser) return;
 
   browser = await puppeteer.launch({
-    executablePath: '/usr/bin/google-chrome', // Explicitně zvoleno, můžeš změnit na jinou cestu
     args: ['--no-sandbox', '--disable-setuid-sandbox'],
     headless: true,
   });
 
   page = await browser.newPage();
-
   await page.goto(CHANNEL_URL);
-
-  await page.waitForSelector('.chat-message'); // uprav podle skutečné třídy na Kick.com
 
   await page.exposeFunction('onNewChatMessage', (username, message) => {
     if (message.trim() === '1') {
       usersWhoTypedOne.add(username);
-      console.log(`Uživatel ${username} napsal 1 — přidán do seznamu.`);
+      console.log(`✅ ${username} napsal 1`);
     }
   });
 
   await page.evaluate(() => {
-    const chatContainer = document.querySelector('.chat-messages-container'); // uprav podle skutečného selektoru
-    if (!chatContainer) {
-      console.error('Chat container nenalezen');
-      return;
-    }
-
-    const observer = new MutationObserver(mutations => {
+    const observer = new MutationObserver((mutations) => {
       for (const mutation of mutations) {
         for (const node of mutation.addedNodes) {
-          if (node.nodeType === Node.ELEMENT_NODE) {
-            const usernameElem = node.querySelector('.username'); // uprav dle struktury
-            const messageElem = node.querySelector('.message-text'); // uprav dle struktury
-
-            if (usernameElem && messageElem) {
-              const username = usernameElem.innerText;
-              const message = messageElem.innerText;
-              window.onNewChatMessage(username, message);
-            }
+          const username = node?.querySelector('.username')?.innerText;
+          const message = node?.querySelector('.message-text')?.innerText;
+          if (username && message) {
+            window.onNewChatMessage(username, message);
           }
         }
       }
     });
 
-    observer.observe(chatContainer, { childList: true });
+    const chat = document.querySelector('.chat-messages-container');
+    if (chat) observer.observe(chat, { childList: true });
   });
 
-  console.log('Bot začal sledovat chat na Kicku.');
+  console.log('🎥 Sleduji chat na Kick.com');
 }
 
-// Funkce pro odpojení bota od chatu
 async function stopKickChatListener() {
-  if (!browser) {
-    console.log('Bot již nesleduje stream.');
-    return;
-  }
-
+  if (!browser) return;
   await browser.close();
   browser = null;
   page = null;
-  console.log('Bot přestal sledovat chat.');
+  console.log('🛑 Přestal jsem sledovat chat.');
 }
 
-// Funkce pro kontrolu, jestli je stream live
 async function checkIfStreamIsLive() {
   try {
     const res = await fetch(CHANNEL_URL);
-    if (!res.ok) return false;
-
-    const text = await res.text();
-    const $ = cheerio.load(text);
-    const jsonText = $('#__NEXT_DATA__').html();
-    if (!jsonText) return false;
-
-    const data = JSON.parse(jsonText);
-    const streamStatus = data.props.pageProps?.stream?.status || 'OFFLINE';
-
-    return streamStatus === 'LIVE';
+    const html = await res.text();
+    const $ = cheerio.load(html);
+    const data = JSON.parse($('#__NEXT_DATA__').html());
+    const status = data?.props?.pageProps?.stream?.status || 'OFFLINE';
+    return status === 'LIVE';
   } catch {
     return false;
   }
 }
 
-// Funkce pro odeslání notifikace na Discord
 async function sendDiscordNotification(message) {
-  const channel = await client.channels.fetch(DISCORD_CHANNEL_ID);
-  if (!channel) return console.error('Kanál nenalezen');
-  await channel.send(message);
-  console.log('Notifikace poslána:', message);
-}
-
-// Monitorování streamu
-async function monitorStream() {
-  const isLive = await checkIfStreamIsLive();
-
-  if (isLive) {
-    if (!notifiedToday) {
-      await sendDiscordNotification(`🚀 Stream právě začal na ${CHANNEL_URL}`);
-      notifiedToday = true;
+  try {
+    const channel = await client.channels.fetch(DISCORD_CHANNEL_ID);
+    if (channel) {
+      await channel.send(message);
+      console.log('📢 Notifikace poslána:', message);
     }
+  } catch (err) {
+    console.error('❌ Nelze poslat zprávu:', err.message);
   }
 }
 
-// Příkazy pro bota
+async function monitorStream() {
+  const isLive = await checkIfStreamIsLive();
+  if (isLive && !notifiedToday) {
+    await sendDiscordNotification(`🚀 Stream začal! Sleduj zde: ${CHANNEL_URL}`);
+    notifiedToday = true;
+  }
+}
+
 client.on('messageCreate', async (message) => {
   if (message.author.bot) return;
 
   if (message.content === '!join') {
     if (isWatchingStream) {
-      message.channel.send('Bot už sleduje tento stream.');
+      message.channel.send('✅ Už sleduji stream.');
     } else {
-      message.channel.send('Bot se připojuje k streamu a začíná sledovat chat...');
+      message.channel.send('🔄 Připojuji se ke streamu...');
       isWatchingStream = true;
-      startKickChatListener();
+      await startKickChatListener();
     }
   }
 
   if (message.content === '!leave') {
-    if (isWatchingStream) {
-      message.channel.send('Bot přestává sledovat chat.');
-      isWatchingStream = false;
-      await stopKickChatListener();
+    if (!isWatchingStream) {
+      message.channel.send('⚠️ Bot nesleduje žádný stream.');
     } else {
-      message.channel.send('Bot ještě nesleduje žádný chat.');
+      await stopKickChatListener();
+      isWatchingStream = false;
+      message.channel.send('🛑 Sledování ukončeno.');
     }
   }
 
   if (message.content === '!reset') {
     usersWhoTypedOne.clear();
-    message.channel.send('Seznam uživatelů byl vymazán.');
-    console.log('Seznam uživatelů resetován.');
+    message.channel.send('🔄 Seznam uživatelů resetován.');
   }
 
   if (message.content === '!kdo') {
     if (usersWhoTypedOne.size === 0) {
-      message.channel.send('Nikdo zatím nenapsal "1".');
+      message.channel.send('❌ Nikdo zatím nenapsal "1".');
     } else {
-      message.channel.send(`Uživatelé, kteří napsali "1": ${[...usersWhoTypedOne].join(', ')}`);
+      message.channel.send(`📝 Uživatele: ${[...usersWhoTypedOne].join(', ')}`);
     }
   }
 });
 
 client.once('ready', () => {
-  console.log(`Bot je online jako ${client.user.tag}`);
-  setInterval(monitorStream, 86400000);
+  console.log(`✅ Bot je online jako ${client.user.tag}`);
+  setInterval(monitorStream, 5 * 60 * 1000); // Každých 5 minut kontrola streamu
 });
 
 client.login(process.env.DISCORD_TOKEN);
