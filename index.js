@@ -1,5 +1,5 @@
 require('dotenv').config();
-require('./keeprunning'); // Spustí mini web server
+require('./keeprunning'); // Spustí web server na pozadí
 
 const { Client, GatewayIntentBits } = require('discord.js');
 
