@@ -1,5 +1,5 @@
 require('dotenv').config();
-require(./keeprunning.js);
+require('./keeprunning.js');
 const {
   Client,
   GatewayIntentBits,
