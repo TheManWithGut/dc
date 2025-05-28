@@ -1,14 +1,14 @@
 {
-  "name": "discord-bot",
+  "name": "DiscordBot",
   "version": "1.0.0",
+  "description": "Bot",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
   },
   "dependencies": {
-    "discord.js": "^14.11.0",
-    "dotenv": "^16.3.1",
-    "node-fetch": "^2.6.7",
-    "express": "^4.18.4"
+    "discord.js": "^14.8.1",
+    "discord-buttons": "^5.0.0",
+    "dotenv": "^16.0.0"
   }
 }
