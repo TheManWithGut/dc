@@ -25,8 +25,8 @@
                 let ongoingMatchesResults = [];
                 let lastKickNotificationDate = null;
                 const kickStreamerUsername = 'bigwsonny'; // Kick username
-                const kickChannelId = '1376926766408405113'; // ID kanálu pro notifikace
-                const discordMentionUserId = '464528763842068481'; // ZDE ZADEJ DISCORD ID osoby, kterou chceš označit
+                const kickChannelId = '1373637989015486627'; // ID kanálu pro notifikace
+               // const discordMentionUserId = '464528763842068481'; // ZDE ZADEJ DISCORD ID osoby, kterou chceš označit
 
                 // Funkce pro kontrolu, zda je streamer online na Kicku
                 async function checkKickLiveStatus() {
@@ -56,8 +56,8 @@
 
                             if (channel) {
                               await channel.send(
-                                `📢 <@${discordMentionUserId}> právě začal stream: **${streamTitle}**\n` +
-                                `🔗 Sleduj na: https://kick.com/${kickStreamerUsername} @everyone`
+                                `📢 <Sonny právě zahájil stream: **${streamTitle}**\n` +
+                                `🔗 Doraz na: https://kick.com/${kickStreamerUsername} @everyone`
                               );
 
                               lastKickNotificationDate = today;
