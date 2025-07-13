@@ -25,62 +25,72 @@
                 let ongoingMatchesResults = [];
                 let lastKickNotificationDate = null;
                 const kickStreamerUsername = 'bigwsonny'; // Kick username
-                const kickChannelId = '1373637989015486627'; // ID kanálu pro notifikace
+            const kickChannelIds = [
+  '1373637989015486627', // Původní
+  'DRUHÉ_ID_KANÁLU'
+];
+
                // const discordMentionUserId = '464528763842068481'; // ZDE ZADEJ DISCORD ID osoby, kterou chceš označit
 
                 // Funkce pro kontrolu, zda je streamer online na Kicku
-                async function checkKickLiveStatus() {
-                  const today = new Date().toDateString();
-                  if (lastKickNotificationDate === today) return;
+               async function checkKickLiveStatus() {
+  const today = new Date().toDateString();
+  if (lastKickNotificationDate === today) return;
 
-                  const options = {
-                    hostname: 'kick.com',
-                    path: `/api/v2/channels/${kickStreamerUsername}`,
-                    method: 'GET',
-                    headers: {
-                      'User-Agent': 'Mozilla/5.0',
-                    },
-                  };
+  const options = {
+    hostname: 'kick.com',
+    path: `/api/v2/channels/${kickStreamerUsername}`,
+    method: 'GET',
+    headers: {
+      'User-Agent': 'Mozilla/5.0',
+    },
+  };
 
-                  return new Promise((resolve, reject) => {
-                    const req = https.request(options, (res) => {
-                      let data = '';
-                      res.on('data', chunk => { data += chunk; });
-                      res.on('end', async () => {
-                        try {
-                          const json = JSON.parse(data);
+  return new Promise((resolve) => {
+    const req = https.request(options, (res) => {
+      let data = '';
+      res.on('data', chunk => { data += chunk; });
+      res.on('end', async () => {
+        try {
+          const json = JSON.parse(data);
 
-                          if (json && json.livestream && json.livestream.is_live) {
-                            const streamTitle = json.livestream.session_title || 'Žádný název streamu';
-                            const channel = await client.channels.fetch(kickChannelId).catch(() => null);
+          if (json && json.livestream && json.livestream.is_live) {
+            const streamTitle = json.livestream.session_title || 'Žádný název streamu';
+            let sentToAtLeastOne = false;
 
-                            if (channel) {
-                              await channel.send(
-                                `📢 <Sonny právě zahájil stream: **${streamTitle}**\n` +
-                                `🔗 Doraz na: https://kick.com/${kickStreamerUsername} @everyone`
-                              );
+            for (const channelId of kickChannelIds) {
+              const channel = await client.channels.fetch(channelId).catch(() => null);
+              if (channel) {
+                await channel.send(
+                  `📢 Sonny právě zahájil stream: **${streamTitle}**\n` +
+                  `🔗 Doraz na: https://kick.com/${kickStreamerUsername} @everyone`
+                );
+                sentToAtLeastOne = true;
+              }
+            }
 
-                              lastKickNotificationDate = today;
-                              resolve(true);
-                              return;
-                            }
-                          }
+            if (sentToAtLeastOne) {
+              lastKickNotificationDate = today;
+              resolve(true);
+              return;
+            }
+          }
 
-                          resolve(false);
-                        } catch (err) {
-                          console.error('Kick API error:', err);
-                          resolve(false);
-                        }
-                      });
-                    });
+          resolve(false);
+        } catch (err) {
+          console.error('Kick API error:', err);
+          resolve(false);
+        }
+      });
+    });
 
-                    req.on('error', (e) => {
-                      console.error('Kick request error:', e);
-                      resolve(false);
-                    });
-                    req.end();
-                  });
-                }
+    req.on('error', (e) => {
+      console.error('Kick request error:', e);
+      resolve(false);
+    });
+    req.end();
+  });
+}
 
                 // Spustíme interval kontrolující stream každých 30 sekund
                 setInterval(() => {
