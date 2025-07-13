@@ -26,8 +26,8 @@
                 let lastKickNotificationDate = null;
                 const kickStreamerUsername = 'bigwsonny'; // Kick username
             const kickChannelIds = [
-  '1373637989015486627', // Původní
-  'DRUHÉ_ID_KANÁLU'
+  '1376926766408405113', // Původní
+  '1374083525233606667'
 ];
 
                // const discordMentionUserId = '464528763842068481'; // ZDE ZADEJ DISCORD ID osoby, kterou chceš označit
