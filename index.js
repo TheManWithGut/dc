@@ -99,9 +99,24 @@
                   }
                 }, 30000);
 
-                client.once('ready', () => {
-                  console.log(`${client.user.tag} is online`);
-                });
+               client.once('ready', async () => {
+  console.log(`${client.user.tag} is online`);
+
+  const guild = client.guilds.cache.first(); // nebo specifický guild ID
+  if (!guild) return console.log('Bot není na žádném serveru');
+
+  await guild.channels.fetch(); // zajistí načtení všech kanálů
+
+  console.log('Kontrola přístupnosti kanálů:');
+  guild.channels.cache.forEach(channel => {
+    if (channel.viewable) {
+      console.log(`✅ Má přístup do kanálu: ${channel.name} [${channel.id}]`);
+    } else {
+      console.log(`❌ NEMÁ přístup do kanálu: ${channel.name} [${channel.id}]`);
+    }
+  });
+});
+
 
                 client.on('interactionCreate', async (interaction) => {
                   if (interaction.isButton() && interaction.customId === 'add_player') {
