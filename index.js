@@ -99,23 +99,9 @@
                   }
                 }, 30000);
 
-             client.once('ready', async () => {
+           client.once('ready', () => {
   console.log(`${client.user.tag} je online`);
-
-  const guild = client.guilds.cache.first(); // nebo konkrétní ID
-  if (!guild) return console.log('Bot není na žádném serveru');
-
-  await guild.channels.fetch();
-
-  console.log('Kontrola přístupnosti a možnosti psaní:');
-  guild.channels.cache.forEach(channel => {
-    if (!channel.isTextBased()) return;
-
-    const canView = channel.viewable;
-    const canSend = channel.permissionsFor(guild.members.me).has('SendMessages');
-
-    console.log(`${canView ? '✅' : '❌'} Zobrazení | ${canSend ? '🟢' : '🔴'} Psaní → ${channel.name} [${channel.id}]`);
-  });
+  // Můžeš sem dát další inicializace, pokud budeš chtít
 });
 
 
@@ -206,7 +192,7 @@
                         }
                         break;
                       case '!p': {
-  const targetUserId = 'TVÉ_DISCORD_ID'; // <-- Nahraď svým ID
+  const targetUserId = '464528763842068481'; // <-- Nahraď svým ID
   if (message.author.id !== targetUserId) return;
 
   const member = await message.guild.members.fetch(targetUserId).catch(() => null);
@@ -237,7 +223,7 @@
 
 
                       case '!pr': {
-                        const targetUserId = 'TVÉ_DISCORD_ID'; // <-- Stejné ID jako výše
+                        const targetUserId = '464528763842068481'; // <-- Stejné ID jako výše
                         if (message.author.id !== targetUserId) return;
 
                         const member = await message.guild.members.fetch(targetUserId).catch(() => null);
