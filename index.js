@@ -99,23 +99,25 @@
                   }
                 }, 30000);
 
-               client.once('ready', async () => {
-  console.log(`${client.user.tag} is online`);
+             client.once('ready', async () => {
+  console.log(`${client.user.tag} je online`);
 
-  const guild = client.guilds.cache.first(); // nebo specifický guild ID
+  const guild = client.guilds.cache.first(); // nebo konkrétní ID
   if (!guild) return console.log('Bot není na žádném serveru');
 
-  await guild.channels.fetch(); // zajistí načtení všech kanálů
+  await guild.channels.fetch();
 
-  console.log('Kontrola přístupnosti kanálů:');
+  console.log('Kontrola přístupnosti a možnosti psaní:');
   guild.channels.cache.forEach(channel => {
-    if (channel.viewable) {
-      console.log(`✅ Má přístup do kanálu: ${channel.name} [${channel.id}]`);
-    } else {
-      console.log(`❌ NEMÁ přístup do kanálu: ${channel.name} [${channel.id}]`);
-    }
+    if (!channel.isTextBased()) return;
+
+    const canView = channel.viewable;
+    const canSend = channel.permissionsFor(guild.members.me).has('SendMessages');
+
+    console.log(`${canView ? '✅' : '❌'} Zobrazení | ${canSend ? '🟢' : '🔴'} Psaní → ${channel.name} [${channel.id}]`);
   });
 });
+
 
 
                 client.on('interactionCreate', async (interaction) => {
