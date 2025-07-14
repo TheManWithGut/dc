@@ -99,10 +99,36 @@
                   }
                 }, 30000);
 
-           client.once('ready', () => {
+          client.on('ready', async () => {
   console.log(`${client.user.tag} je online`);
-  // Můžeš sem dát další inicializace, pokud budeš chtít
+
+  const guild = client.guilds.cache.first(); // Pokud je bot v více guildách, uprav to dle potřeby
+
+  if (!guild) {
+    console.log('Žádná guilda nebyla nalezena');
+    return;
+  }
+
+  // Projdi všechny textové kanály
+  const textChannels = guild.channels.cache.filter(channel => channel.isTextBased());
+  const writableChannels = [];
+
+  textChannels.forEach(channel => {
+    // Ověř, zda má bot oprávnění psát do kanálu
+    if (channel.permissionsFor(client.user)?.has(PermissionsBitField.Flags.SendMessages)) {
+      writableChannels.push(channel.name);
+    }
+  });
+
+  // Vypiš kanály, do kterých bot může psát
+  if (writableChannels.length > 0) {
+    console.log('Bot může psát do následujících kanálů:');
+    writableChannels.forEach(channelName => console.log(`- ${channelName}`));
+  } else {
+    console.log('Bot nemůže psát do žádného kanálu.');
+  }
 });
+
 
 
 
